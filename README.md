@@ -1,4 +1,4 @@
-CHAT ROOM using BSD Sockets(UNIX)
+CHAT FORUM using BSD Sockets(UNIX)
 
 Components:   
   -> Concurrent Server    
