@@ -94,24 +94,10 @@ void receive_message_handler(void * arg)
 	sigint_handler(2);
 }
 
-void registration(char * ip_address, int port_number)
+void setup_socket(char * ip_address, int port_number)
 {
-	printf("REGISTRATION:\n");
-
-	printf("Username: ");
-	
-	getchar();
-
-	fgets(user_name, 32, stdin);
-	user_name[strlen(user_name)-1]='\0'; //remove endl character
-
-	printf("Password: ");
-
-	fgets(password, 32, stdin);
-	password[strlen(password)-1]='\0'; //remove endl character
 
 	struct sockaddr_in server_address; 
-
 	socket_fd = socket(AF_INET, SOCK_STREAM, 0);
 	server_address.sin_family = AF_INET;
 	server_address.sin_addr.s_addr = inet_addr(ip_address);
@@ -125,13 +111,19 @@ void registration(char * ip_address, int port_number)
 		perror("Connection to server failed.\n");
 		exit(EXIT_FAILURE);
 	}
+}
 
+void send_credentials_to_server()
+{
 	send(socket_fd, &wants_registration, sizeof(int), 0);
 
 	send(socket_fd, user_name, sizeof(user_name), 0);
 
 	send(socket_fd, password, sizeof(password), 0);
+}
 
+void setup_sendrecv_threads()
+{
 	pthread_t send_message_thread;
 
 	if((pthread_create(&send_message_thread, NULL, (void *)send_message_handler,NULL)) != 0)
@@ -161,6 +153,31 @@ void registration(char * ip_address, int port_number)
 	exit(EXIT_SUCCESS);
 }
 
+void registration(char * ip_address, int port_number)
+{
+	printf("REGISTRATION:\n");
+
+	printf("Username: ");
+	
+	getchar();
+
+	fgets(user_name, 32, stdin);
+	user_name[strlen(user_name)-1]='\0'; //remove endl character
+
+	printf("Password: ");
+
+	fgets(password, 32, stdin);
+	password[strlen(password)-1]='\0'; //remove endl character
+
+	setup_socket(ip_address, port_number);
+
+	send_credentials_to_server();
+
+	setup_sendrecv_threads();
+}
+
+
+
 void login(char * ip_address, int port_number)
 {
 	printf("LOGIN.\n");
@@ -174,58 +191,14 @@ void login(char * ip_address, int port_number)
 
 	fgets(password, 32, stdin);
 	password[strlen(password)-1]='\0';
-	
-	struct sockaddr_in server_address; 
 
-	socket_fd = socket(AF_INET, SOCK_STREAM, 0);
-	server_address.sin_family = AF_INET;
-	server_address.sin_addr.s_addr = inet_addr(ip_address);
-	server_address.sin_port = htons(port_number);
-
-	int connection;
-
-	if((connection = connect(socket_fd, (struct sockaddr*) 
-		&server_address, sizeof(server_address))) == -1)
-	{
-		perror("Connection to server failed.\n");
-		exit(EXIT_FAILURE);
-	}
+	setup_socket(ip_address, port_number);
 
 	wants_registration = 0;
 
-	send(socket_fd, &wants_registration, sizeof(int), 0);
+	send_credentials_to_server();
 
-	send(socket_fd, user_name, sizeof(user_name), 0);
-
-	send(socket_fd, password, sizeof(password), 0);
-
-	pthread_t send_message_thread;
-
-	if(pthread_create(&send_message_thread, NULL, (void *)send_message_handler,NULL) != 0)
-	{
-		perror("Message sender thread failed.\n");
-		exit(EXIT_FAILURE);
-	}
-
-	pthread_t receive_message_thread;
-
-	if(pthread_create(&receive_message_thread, NULL, (void *)receive_message_handler, NULL) != 0)
-	{
-		perror("Message receiver thread failed.\n");
-		exit(EXIT_FAILURE);
-	}	
-
-	for(;;)
-	{
-		if(flag){
-			printf("\nFarewell.\n");
-			break;
-		}
-	}
-
-	close(socket_fd);
-
-	exit(EXIT_SUCCESS);
+	setup_sendrecv_threads();
 
 }
 
@@ -234,7 +207,7 @@ void menu(char *ip_address, int port_number)
 
   int option;
 
-  printf("== WELCOME TO THE FORUM ==\n");
+  printf(">>> WELCOME TO THE FORUM <<<\n");
   printf("1.Registration\n");
   printf("2.Login\n");
   printf("3.Exit\n");
@@ -278,7 +251,6 @@ int main(int argc, char **argv){
 	signal(SIGINT, sigint_handler);
 
 	menu(ip_address, port_number);
-
 
 return 0;
 

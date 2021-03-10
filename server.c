@@ -354,7 +354,7 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	printf("=== WELCOME TO THE FORUM ===\n");
+	printf("Forum server started succesfuly...\n");
 
 	for(;;)
 	{
